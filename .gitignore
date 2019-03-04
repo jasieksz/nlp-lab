@@ -1,6 +1,6 @@
 # jsz
-Pipfile.lock
 .vscode
+resources/ustawy/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
