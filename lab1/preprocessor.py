@@ -1,6 +1,6 @@
 #%%
 import re
-from typing import (List, Optional, Match, Any)
+from typing import List, Optional, Match, Any, Tuple, Sequence
 from lab1 import patterns
 
 #%%
@@ -28,12 +28,19 @@ class StatuteProcessor():
     def test_any_pattern(self, pattern: str) -> Optional[Match[Any]]:
         x = re.search(pattern, self.statue)
         return x
+    
+    def get_statue_info(self):
+        j: Tuple = re.search(patterns.journal(), self.statue).groups()
+        dt: Tuple = re.search(patterns.date_title(), self.statue).groups()
+        if (len(j) == 2 and len(dt) >= 4):
+            return (dt[3], (dt[2], dt[1], dt[0]), j)
+        return None
 
 #%%
 resource_path = 'resources/ustawy/'
-filename = '1997_511.txt'
+filename = '1997_494.txt'
 sp = StatuteProcessor(resource_path + filename)
 
 #%%
-sp.test_any_pattern(patterns.register()).groups()
+sp.get_statue_info()
 
