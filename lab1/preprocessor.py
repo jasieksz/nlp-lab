@@ -1,40 +1,39 @@
 #%%
 import re
+from typing import (List, Optional, Match, Any)
+from lab1 import patterns
 
 #%%
 class StatuteProcessor():
-    patterns: dict = {
-        'section': (lambda number : r'\s*Art. ' + re.escape(number) + r'.\n')
-    }
-    
-    def __init__(self, statue_path):
+    def __init__(self, statue_path: str):
         self.statue_path: str = statue_path
-        self.statue_lines: List[str] = self.read_statue()
+        self.statue_lines: List[str] = self.read_statue_lines()
+        self.statue: str = self.read_statue()
     
-    def read_statue(self):
+    def read_statue_lines(self) -> List[str]:
         with open(self.statue_path, 'r') as document:
             return document.readlines()
 
-    # TODO : Refactor, make more pythonic!
-    def get_article(self, number: int):
-        article = []
-        inside_article: int = False
-        for line in self.statue_lines:
-            if not inside_article and re.match(self.patterns['section'](str(number)), line):
-                inside_article = True
-            if inside_article and re.match(self.patterns['section'](str(number+1)), line):
-                inside_article = False
-            if inside_article:
-                article.append(line)
-        return article
+    def read_statue(self) -> str:
+        with open(self.statue_path, 'r') as document:
+            return document.read()
 
+    def get_article_count(self) -> int:
+        count: int = 0
+        for line in self.statue_lines:
+            if re.search(patterns.section(), line):
+                count += 1
+        return count
+
+    def test_any_pattern(self, pattern: str) -> Optional[Match[Any]]:
+        x = re.search(pattern, self.statue)
+        return x
 
 #%%
-resource_path = 'nlp-lab/resources/ustawy/'
+resource_path = 'resources/ustawy/'
 filename = '1997_511.txt'
 sp = StatuteProcessor(resource_path + filename)
 
 #%%
-sp.get_article(3)
-
+sp.test_any_pattern(patterns.register()).groups()
 
