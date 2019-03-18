@@ -8,6 +8,7 @@ import itertools
 def clean_external(txt: str) -> str:
     txt = re.sub('Dz\.(U|u)\.', '', txt)
     txt = txt.replace('\n', '')
+    txt = re.sub(r'i(?=\d*)', '+', txt)
     txt = re.sub(r'(i|oraz)', ',', txt)
     txt = re.sub(r'\bz','',txt)
     txt = re.sub(r'\.(?!r)', ',', txt)
@@ -15,7 +16,7 @@ def clean_external(txt: str) -> str:
     return txt
 
 def split_year_external(txt: str) -> List[str]:
-    return [x for x in re.split(r'\d{4}r', txt) if len(x)]
+    return [x for x in re.split(r'((?:19|20)\d{2})r*', txt) if len(x)]
 
 def split_record_external(txt: str) -> List[int]:
     splt = re.split(r'Nr(\d*)\,poz\,(\d*)', txt)
@@ -73,9 +74,17 @@ class StatuteProcessor():
             txt = match.group(0)
             txt = clean_external(txt)
             by_year = split_year_external(txt)
+
+            current_year = '0000'
             for year in by_year:
-                by_record = split_record_external(year)
-                references.append(by_record)
+                if (len(year) == 4):
+                    current_year = year
+                else:
+                    by_record = split_record_external(year)
+                    if len(by_record) > 0:
+                        references.append((current_year, by_record))
+                    
+        print(references)
         return pairs((flatten([r for r in references if len(r) > 0 and len(r) % 2 == 0])))
 
 #%%
@@ -86,3 +95,13 @@ sp = StatuteProcessor(resource_path + filename)
 
 #%%
 sp.get_external_references()
+
+#%%
+txt = 'Dz.U. z 1998 Nr 162, poz. 1114 i 1126 oraz z 1999r. Nr 666, poz. 123'
+a = clean_external(txt)
+split_year_external(a)
+b = split_year_external(a)[1]
+
+#%%
+split_record_external(b)
+#ustawa, y, ie, ę, ą, o, om, ami, ach
