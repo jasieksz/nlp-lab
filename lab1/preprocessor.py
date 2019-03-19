@@ -1,33 +1,9 @@
 #%%
 import re
-from typing import List, Optional, Match, Any, Tuple, Sequence
-from lab1 import patterns
-import itertools
-
-#%%
-def clean_external(txt: str) -> str:
-    txt = re.sub('Dz\.(U|u)\.', '', txt)
-    txt = txt.replace('\n', '')
-    txt = re.sub(r'i(?=\d*)', '+', txt)
-    txt = re.sub(r'(i|oraz)', ',', txt)
-    txt = re.sub(r'\bz','',txt)
-    txt = re.sub(r'\.(?!r)', ',', txt)
-    txt = txt.replace(' ', '')
-    return txt
-
-def split_year_external(txt: str) -> List[str]:
-    return [x for x in re.split(r'((?:19|20)\d{2})r*', txt) if len(x)]
-
-def split_record_external(txt: str) -> List[int]:
-    splt = re.split(r'Nr(\d*)\,poz\,(\d*)', txt)
-    return [int(num) for num in splt if re.match(r'\d', num)]
-
-#%%
-def flatten(listOfLists):
-    return list(itertools.chain.from_iterable(listOfLists))
-
-def pairs(list):
-    return [(list[i], list[i+1]) for i in range(0,len(list),2)]
+from typing import List, Tuple, Optional, Match, Any
+from lab1 import patterns as pts
+from lab1 import shapers as shp
+from lab1 import splitters as splt
 
 #%%
 class StatuteProcessor():
@@ -47,7 +23,7 @@ class StatuteProcessor():
     def get_article_count(self) -> int:
         count: int = 0
         for line in self.statue_lines:
-            if re.search(patterns.section(), line):
+            if re.search(pts.section(), line):
                 count += 1
         return count
 
@@ -56,52 +32,46 @@ class StatuteProcessor():
         return x
     
     def get_statue_info(self):
-        j: Tuple = re.search(patterns.journal(), self.statue).groups()
-        dt: Tuple = re.search(patterns.date_title(), self.statue).groups()
+        j: Tuple = re.search(pts.journal(), self.statue).groups()
+        dt: Tuple = re.search(pts.date_title(), self.statue).groups()
         if (len(j) == 2 and len(dt) >= 4):
             return (dt[3], (dt[2], dt[1], dt[0]), j)
         return None
             
     def get_external_references(self):
-        statue_trimed = self.statue[len(self.statue_lines[4]):]
+        trim = re.search(pts.journal(), self.statue).span()[1]
+        statue_trimed = self.statue[trim:]
         references = []
         while (True):
-            match = re.search(patterns.external_reference(), statue_trimed)
+            match = re.search(pts.external_reference(), statue_trimed)
             if not match:
                 break
             idx = match.span()
             statue_trimed = statue_trimed[idx[1]:]
             txt = match.group(0)
-            txt = clean_external(txt)
-            by_year = split_year_external(txt)
 
-            current_year = '0000'
+            txt = clean_external(txt)
+            by_year: List[Tuple[str,str]] = splt.split_year(txt)
+            
             for year in by_year:
-                if (len(year) == 4):
-                    current_year = year
-                else:
-                    by_record = split_record_external(year)
-                    if len(by_record) > 0:
-                        references.append((current_year, by_record))
-                    
-        print(references)
-        return pairs((flatten([r for r in references if len(r) > 0 and len(r) % 2 == 0])))
+                by_nr: List[str] = splt.split_nr(year[1])
+                for nr in by_nr:
+                    pos: List[str] = splt.split_pos(nr[1])
+                    y = year[0]
+                    n = nr[0]
+                    if not re.match(r'\d{4}', y):
+                        y = '0000'
+                    if not re.match(r'\d+', n):
+                        n = '000'
+                    references.append((y, n, pos))
+        return shp.flatten(list(map(shp.flatten_references, references)))
 
 #%%
 resource_path = 'resources/ustawy/'
 # filename = '1997_494.txt'
 filename = '1999_804.txt'
+# filename = '2000_700.txt'
 sp = StatuteProcessor(resource_path + filename)
 
 #%%
 sp.get_external_references()
-
-#%%
-txt = 'Dz.U. z 1998 Nr 162, poz. 1114 i 1126 oraz z 1999r. Nr 666, poz. 123'
-a = clean_external(txt)
-split_year_external(a)
-b = split_year_external(a)[1]
-
-#%%
-split_record_external(b)
-#ustawa, y, ie, ę, ą, o, om, ami, ach
