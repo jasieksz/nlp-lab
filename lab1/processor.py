@@ -32,21 +32,27 @@ class StatuteProcessor():
         return x
     
     def get_statue_info(self):
-        j: Tuple = re.search(pts.journal(), self.statue).groups()
-        dt: Tuple = re.search(pts.date_title(), self.statue).groups()
-        if (len(j) == 2 and len(dt) >= 4):
-            return (dt[3], (dt[2], dt[1], dt[0]), j)
+        j = re.search(pts.journal(), self.statue)
+        dt = re.search(pts.date_title(), self.statue)
+        if (j and dt):
+            j = j.groups()
+            dt = dt.groups()
+            if (len(j) == 2 and len(dt) >= 4):
+                return (dt[3], (dt[2], dt[1], dt[0]), j)
         return None
             
     def get_external_references(self):
-        match, text, trimmed = splt.trim_and_match(self.statue, pts.journal())
+        is_match, text_match, trimmed = splt.match_and_trim(self.statue, pts.journal())
         references = []
-        while (match):
-            match, text, trimmed = splt.trim_and_match(trimmed, pts.external_reference())
-            if not match: 
-                break
+        is_match = True # Force while entry
+        while (is_match):
+            is_match, text_match, trimmed = splt.match_and_trim(trimmed, pts.external_reference())
+            if not is_match: 
+                is_match, text_match, trimmed = splt.match_and_trim(trimmed, pts.external_reference_ketless())
+                if not is_match:
+                    break
 
-            text = splt.clean_external(text)
+            text = splt.clean_external(text_match)
             by_year: List[Tuple[str,str]] = splt.split_year(text)
             for year in by_year:
                 by_nr: List[str] = splt.split_nr(year[1])
@@ -60,4 +66,4 @@ class StatuteProcessor():
                         n = '000'
                     references.append((y, n, pos))
         return shp.flatten(list(map(shp.flatten_references, references)))
-
+        
