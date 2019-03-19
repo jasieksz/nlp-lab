@@ -13,3 +13,4 @@ def flatten_references(ref: Tuple[str, str, List[str]]):
 def pairs(list):
     size = len(list)
     return [(list[i], list[(i+1) % size]) for i in range(0,len(list),2)]
+    

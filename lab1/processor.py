@@ -66,4 +66,15 @@ class StatuteProcessor():
                         n = '000'
                     references.append((y, n, pos))
         return shp.flatten(list(map(shp.flatten_references, references)))
+
+    def get_ustawa_count(self) -> int:
+        base = r'u\s*s\s*t\s*a\s*w'
+        wb = r'\b'
+        suffix = [r'a', r'y', r'ie', r'ę', r'ą', r'o', r'om', r'ami', r'ach']
+        forms = [wb+base+suf+wb for suf in suffix]
+        count: int = 0
+        for line in self.statue_lines:
+            count += sum(len(re.findall(f, line.lower())) for f in forms)
+
+        return count
         

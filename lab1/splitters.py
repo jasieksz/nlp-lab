@@ -32,3 +32,4 @@ def split_pos(txt: str) -> List[str]:
 def match_and_trim(txt: str, pattern: str) -> Tuple[bool, str, str]:
     match = re.search(pattern, txt)
     return (True, match.group(0), txt[match.span()[1]:]) if match else (False, '', txt)
+    
