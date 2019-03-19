@@ -1,7 +1,8 @@
 #%%
 import re
 from lab1 import shapers
-from typing import List, Tuple
+from lab1 import patterns
+from typing import List, Tuple, Any
 
 def clean_external(txt: str) -> str:
     txt = txt.replace(u'\xa0', u' ')
@@ -33,3 +34,20 @@ def match_and_trim(txt: str, pattern: str) -> Tuple[bool, str, str]:
     match = re.search(pattern, txt)
     return (True, match.group(0), txt[match.span()[1]:]) if match else (False, '', txt)
     
+def index_split_by(txt: str, pattern: str, parent_size: int) -> List[Tuple[int, int]]:
+    split = [m.span() for m in re.finditer(pattern, txt)]
+    if not split:
+        return [(0,len(txt))]
+    last_index = split[len(split) - 1][1]
+    result = [(split[i][1], split[i+1][0]) for i in range(0, len(split)-1)]
+    result.append((last_index, parent_size))
+    return result
+
+def split_section(txt: str, parent_size: int) -> List[Tuple[int, int]]:
+    return index_split_by(txt, patterns.section(), parent_size) 
+
+def split_paragraph(txt: str, parent_size: int) -> List[Tuple[int, int]]:
+    return index_split_by(txt, patterns.paragraph(), parent_size)
+    
+def split_point(txt: str, parent_size: int) -> List[Tuple[int, int]]:
+    return index_split_by(txt, patterns.point(), parent_size)

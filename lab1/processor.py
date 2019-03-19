@@ -1,6 +1,7 @@
 #%%
 import re
 from typing import List, Tuple, Optional, Match, Any
+from collections import Counter
 from lab1 import patterns as pts
 from lab1 import shapers as shp
 from lab1 import splitters as splt
@@ -19,29 +20,14 @@ class StatuteProcessor():
     def read_statue(self) -> str:
         with open(self.statue_path, 'r') as document:
             return document.read()
-
-    def get_article_count(self) -> int:
-        count: int = 0
-        for line in self.statue_lines:
-            if re.search(pts.section(), line):
-                count += 1
-        return count
-
-    def test_any_pattern(self, pattern: str) -> Optional[Match[Any]]:
-        x = re.search(pattern, self.statue)
-        return x
     
-    def get_statue_info(self):
-        j = re.search(pts.journal(), self.statue)
+    def get_statue_title(self) -> str:
         dt = re.search(pts.date_title(), self.statue)
-        if (j and dt):
-            j = j.groups()
-            dt = dt.groups()
-            if (len(j) == 2 and len(dt) >= 4):
-                return (dt[3], (dt[2], dt[1], dt[0]), j)
-        return None
+        if dt:
+            return ' '.join([e for e in re.sub(r'\n*', '', dt.group(0)).split(' ') if e != ''])
+        return ''
             
-    def get_external_references(self):
+    def get_external_references(self) -> List[Tuple[str, str, str]]:
         is_match, text_match, trimmed = splt.match_and_trim(self.statue, pts.journal())
         references = []
         is_match = True # Force while entry
@@ -65,7 +51,24 @@ class StatuteProcessor():
                     if not re.match(r'\d+', n):
                         n = '000'
                     references.append((y, n, pos))
+
         return shp.flatten(list(map(shp.flatten_references, references)))
+
+    def get_internal_references(self):
+        references = []
+        sections = splt.split_section(self.statue, len(self.statue))
+        for section_id, section_span in enumerate(sections,1):
+            section_text = self.statue[section_span[0]:section_span[1]]
+            paragraphs = splt.split_paragraph(section_text, len(section_text))
+            for paragraph_id, paragraph_span in enumerate(paragraphs, 1):
+                paragraph_text = section_text[paragraph_span[0]:paragraph_span[1]]
+                for p,f in zip(pts.internal_pattern_order(), shp.internal_lambda_order()):
+                    matches = re.findall(p, paragraph_text)
+                    if matches:
+                        references.append(list(map(f, matches)))
+                        paragraph_text = re.sub(p, '', paragraph_text)
+
+        return Counter(shp.flatten(references))
 
     def get_ustawa_count(self) -> int:
         base = r'u\s*s\s*t\s*a\s*w'
@@ -75,6 +78,8 @@ class StatuteProcessor():
         count: int = 0
         for line in self.statue_lines:
             count += sum(len(re.findall(f, line.lower())) for f in forms)
-
         return count
-        
+
+    def test_any_pattern(self, pattern: str) -> Optional[Match[Any]]:
+        x = re.search(pattern, self.statue)
+        return x
