@@ -39,20 +39,15 @@ class StatuteProcessor():
         return None
             
     def get_external_references(self):
-        trim = re.search(pts.journal(), self.statue).span()[1]
-        statue_trimed = self.statue[trim:]
+        match, text, trimmed = splt.trim_and_match(self.statue, pts.journal())
         references = []
-        while (True):
-            match = re.search(pts.external_reference(), statue_trimed)
-            if not match:
+        while (match):
+            match, text, trimmed = splt.trim_and_match(trimmed, pts.external_reference())
+            if not match: 
                 break
-            idx = match.span()
-            statue_trimed = statue_trimed[idx[1]:]
-            txt = match.group(0)
 
-            txt = clean_external(txt)
-            by_year: List[Tuple[str,str]] = splt.split_year(txt)
-            
+            text = splt.clean_external(text)
+            by_year: List[Tuple[str,str]] = splt.split_year(text)
             for year in by_year:
                 by_nr: List[str] = splt.split_nr(year[1])
                 for nr in by_nr:
@@ -66,12 +61,3 @@ class StatuteProcessor():
                     references.append((y, n, pos))
         return shp.flatten(list(map(shp.flatten_references, references)))
 
-#%%
-resource_path = 'resources/ustawy/'
-# filename = '1997_494.txt'
-filename = '1999_804.txt'
-# filename = '2000_700.txt'
-sp = StatuteProcessor(resource_path + filename)
-
-#%%
-sp.get_external_references()
