@@ -13,6 +13,7 @@ nltk = "*"
 jupyter = "*"
 pylint = "*"
 mypy = "*"
+elasticsearch = "*"
 
 [requires]
 python_version = "3.7"
