@@ -16,9 +16,8 @@ def ex2():
     result = []
     for filename in os.listdir(resource_path):
         sp = processor.StatuteProcessor(resource_path + '/' + filename)
-        title = sp.get_statue_title()
-        references = sp.get_internal_references()
-        result.append((title, references))
+        references = sp.get_internal_references().most_common(5)
+        result.append((filename, references))
     return result
 
 def ex3(): # 24183
@@ -34,6 +33,9 @@ print(ex1())
 print(ex3())
 
 #%% ex2 example run
-resource_path = 'resources/ustawy/'
-sp = processor.StatuteProcessor(resource_path + '1996_603.txt')
-sp.get_internal_references()
+resource_path = 'resources/ustawy'
+filename = "1996_460.txt"
+sp = processor.StatuteProcessor(resource_path + '/' + filename)
+title = sp.get_statue_title()
+references = sp.get_internal_references()
+references.most_common()

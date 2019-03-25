@@ -62,10 +62,20 @@ class StatuteProcessor():
             paragraphs = splt.split_paragraph(section_text, len(section_text))
             for paragraph_id, paragraph_span in enumerate(paragraphs, 1):
                 paragraph_text = section_text[paragraph_span[0]:paragraph_span[1]]
-                for p,f in zip(pts.internal_pattern_order(), shp.internal_lambda_order()):
+                for i,p in enumerate(pts.internal_pattern_order()):
                     matches = re.findall(p, paragraph_text)
                     if matches:
-                        references.append(list(map(f, matches)))
+                        tmp = []
+                        for m in matches:
+                            if i == 0:
+                                tmp.append(shp.internal_ref(m[0], m[1], m[2]))
+                            if i == 1:
+                                tmp.append(shp.internal_ref(m[0], paragraph_id, m[1]))
+                            if i == 2:
+                                tmp.append(shp.internal_ref(m[0], m[1], '0'))
+                            if i == 3:
+                                tmp.append(shp.internal_ref(section_id, m[0], '0'))
+                        references.append(tmp)
                         paragraph_text = re.sub(p, '', paragraph_text)
 
         return Counter(shp.flatten(references))
