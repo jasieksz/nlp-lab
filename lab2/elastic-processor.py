@@ -1,5 +1,6 @@
 #%%
 import os
+import numpy as np
 from elasticsearch import Elasticsearch
 from elasticsearch.client import IndicesClient
 
@@ -26,7 +27,7 @@ es.indices.create(
                   "my_analyzer": {
                       "type": "custom",
                       "tokenizer": "standard",
-                      "filter": ["lowercase", "my_synonyms", "morfologik_stem"]
+                      "filter": ["my_synonyms", "morfologik_stem", "lowercase"]
                     }
                 }
             }
@@ -43,15 +44,6 @@ es.indices.create(
         }
     }
 )
-
-
-#%% 3 Test
-analyzer_params = lambda txt: {
-    "tokenizer": "standard",
-    "filter": ["lowercase", "my_synonyms", "morfologik_stem"],
-    "text": txt}
-
-es.indices.analyze("my_index2", analyzer_params("JESTEM KC"))
 
 #%% 5 Load the data to the ES index
 resource_path = 'resources/ustawy'
@@ -90,10 +82,48 @@ es.search(
     }
 )["hits"]["total"]
 
-
-#%% 8 containing the words wchodzi w życie
+#%% 8 containing the words wchodzi w życie 1175
+es.search(
+    index="my_index",
+    doc_type="legislation",
+    body={
+        "query": {
+            "match_phrase": {
+                "text": {
+                    "query": "wchodzi w życie",
+                    "slop": 2
+                }                             
+            }
+        },
+    }
+)["hits"]["total"]
 
 #%% 9 documents that are the most relevant for the phrase konstytucja
+x = es.search(
+    index="my_index",
+    doc_type="legislation",
+    size=45,
+    body={
+        "query": {
+            "match": {
+                "text": {
+                    "query": "konstytucja",
+                }                             
+            }
+        },
+        "highlight" : {
+            "fields" : {
+                "text" : {}
+            },
+            "boundary_scanner": "sentence",
+            "number_of_fragments": 3,
+            "order": "score"
+        }
+    }
+)["hits"]
+top = [[ e['_score'], e['_id'], e['highlight']['text']] for e in sorted(x['hits'], key=lambda e: -e['_score'])][:10]
+top = np.array(top)
+top[:,:2]
 
 #%% 10 excerpts containing the word konstytucja from ex9
-
+top[:,1:]

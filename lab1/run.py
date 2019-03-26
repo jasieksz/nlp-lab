@@ -15,6 +15,7 @@ def ex2():
     resource_path = 'resources/ustawy'
     result = []
     for filename in os.listdir(resource_path):
+        print(filename)
         sp = processor.StatuteProcessor(resource_path + '/' + filename)
         references = sp.get_internal_references().most_common(5)
         result.append((filename, references))
@@ -29,8 +30,13 @@ def ex3(): # 24183
     return count
 
 #%%
-print(ex1())
-print(ex3())
+ex1().most_common()
+
+#%%
+ex2()
+
+#%%
+ex3()
 
 #%% ex2 example run
 resource_path = 'resources/ustawy'
