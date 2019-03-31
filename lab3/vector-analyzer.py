@@ -4,6 +4,7 @@ import numpy as np
 import re
 import seaborn as sns
 import pandas as pd
+import Levenshtein
 from collections import Counter
 from functools import reduce
 from elasticsearch import Elasticsearch
@@ -67,13 +68,14 @@ term_freq = reduce(lambda x,y : x + y, [get_term_freq(f_id) for f_id in os.listd
 
 #%% 3 Filter the list to keep terms that contain only letters and have at least 2 of them
 term_freq = Counter(dict(filter(lambda x: len(x[0]) > 1, term_freq.most_common())))
+# len(t_f) = 22880
 
 #%% 4 Plot, log scale, rank vs occurences
 rank, freq = zip(*enumerate(term_freq.most_common()))
 rank = list(map(lambda x: x+1, rank))
 freq = list(map(lambda x: int(x), np.array(freq)[:,1]))
 
-sns.set_context("notebook")
+sns.set_style("whitegrid")
 g = sns.lineplot(x=rank, y=freq, color='coral', lw=2.75)
 g.set(yscale="log")
 
@@ -86,6 +88,20 @@ missing = [x for x in term_freq.most_common() if not x[0] in forms]
 missing[:30]
 
 #%% 7 Find 30 words with 3 occurrences that do not belong to the dictionary
-list(map(lambda x: (re.sub(r'\xad', '', x[0]), x[1]), filter(lambda x: x[1] == 3, missing)))
+# missing_triples = list(map(lambda x: (re.sub(r'\xad', '', x[0]), x[1]), filter(lambda x: x[1] == 3, missing)))
+missing_triples = list(filter(lambda x: x[1] == 3, missing))
+missing_triples[:30]
 
 #%% 8 Use Levenshtein distance and the frequency list, to determine correction
+def correction(word):
+    order = lambda x: -np.log(term_freq[x[0]]) / Levenshtein.distance(word[0], x[0])
+    max_dist = lambda correction: Levenshtein.distance(correction[0], word[0]) <= 4 and correction[0] in forms
+    possible = sorted(term_freq.items(), key=order)[:3]
+    return list(filter(max_dist, possible))
+
+def corrections(words):
+    for word in words:
+        yield (word, [x for x in correction(word)])
+
+cor = dict(corrections(missing_triples))
+cor
