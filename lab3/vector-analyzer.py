@@ -6,7 +6,7 @@ import seaborn as sns
 import pandas as pd
 import Levenshtein
 from collections import Counter
-from functools import reduce
+from functools import reduce, partial
 from elasticsearch import Elasticsearch
 from elasticsearch.client import IndicesClient
 
@@ -78,6 +78,7 @@ freq = list(map(lambda x: int(x), np.array(freq)[:,1]))
 sns.set_style("whitegrid")
 g = sns.lineplot(x=rank, y=freq, color='coral', lw=2.75)
 g.set(yscale="log")
+g.set(xscale="log")
 
 #%% 5 Find all words not in dictionary: "polimorfologik"
 df = pd.read_csv('resources/polimorfologik-2.1/polimorfologik-2.1.csv', delimiter=';')
@@ -94,11 +95,11 @@ missing_triples[:30]
 
 #%% 8 Use Levenshtein distance and the frequency list, to determine correction
 def correction(word):
-    order = lambda x: -np.log(term_freq[x[0]]) / Levenshtein.distance(word[0], x[0])
+    order = lambda x: np.divide(np.log(x[1]), Levenshtein.distance(word[0], x[0]))
     max_dist = lambda correction: Levenshtein.distance(correction[0], word[0]) <= 4 and correction[0] in forms
-    possible = sorted(term_freq.items(), key=order)[:3]
+    possible = sorted(term_freq.items(), key=order, reverse=True)[:3]
     return list(filter(max_dist, possible))
-
+    
 def corrections(words):
     for word in words:
         yield (word, [x for x in correction(word)])
