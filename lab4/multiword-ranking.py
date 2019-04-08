@@ -78,20 +78,68 @@ tokens_freq = Counter(list(filter(text_only, tokens)))
 
 #%% 2. Pointwise Mutal Information score
 p_t = lambda token: tokens_freq[token] / len(tokens_freq)
-p_s = lambda shingle: shingle_freq[shingle] / len(tokens_freq)
+p_s = lambda shingle: shingle_freq[shingle] / len(shingle_freq)
 pmi = lambda x, y: np.log(p_s((x, y)) / (p_t(x) * p_t(y)))
 
-pmis = [(s, pmi(s[0], s[1])) for s in shingle_freq.keys()]
-
 #%% 3. 30 top from ex.2
-sorted(pmis, key=lambda e: e[1], reverse=True)[:10]
+pmis = [(s, pmi(s[0], s[1])) for s in shingle_freq.keys()]
+pmis = sorted(pmis, key=lambda e: e[1], reverse=True)
+pmis[:30]
+
+#%%
+pmis2 = [(s, pmi(s[0], s[1])) for s in shingle_freq.keys() if shingle_freq[s] > 10]
+pmis2 = sorted(pmis2, key=lambda e: e[1], reverse=True)
+pmis2[:30]
 
 #%% 4. Log Likelihood Ration score
+h = lambda k: (k/k.sum() * np.log(k/k.sum() + (k==0))).sum()
+llr = lambda k: 2*k.sum() * (h(k) - h(k.sum(axis=0)) - h(k.sum(axis=1)))
+sum_shingles = sum(list(shingle_freq.values()))
+
+a_n_b = lambda a, b, s: s[0][0]==a and s[0][1]!=b
+val = lambda s: s[1]
+
+def prob(a, b, shingle_items):
+    anb = partial(a_n_b, a, b)
+    bna = partial(a_n_b, b, a)
+    a_and_b = shingle_freq.get((a, b), 0)
+    # all - first(a) - second(b)
+    a_not_b = sum(map(val, filter(anb, shingle_items)))
+    b_not_a = sum(map(val, filter(bna, shingle_items)))
+    none = sum_shingles - a_not_b - b_not_a - a_and_b
+    return np.array([[a_and_b, a_not_b], [b_not_a, none]])
+
+arr = shingle_freq.items()
+gen_probs = ((s, prob(s[0], s[1], arr)) for s in shingle_freq.keys())
+
+#%%
+llrs = []
+for e in gen_probs:
+    score = 0
+    try:
+        score = llr(e[1])
+    except:
+        score = 0
+    finally:        
+        llrs.append((e[0], score))
+llrs = sorted(llrs, key=lambda e: e[1], reverse=True)
 
 #%% 5. 30 top from ex.4
+llrs[:30]
 
 #%% 6.1 PMI or LLR ?
+# LLR
+# http://www.lrec-conf.org/proceedings/lrec2002/pdf/128.pdf
 
 #%% 6.2 How to build multiword dictionary
+# Large dataset
 
 #%% 6.3 Metric threshold for good/bad multiword
+threshold = np.nanquantile(list((v for (k, v) in llrs)), 0.95)
+print(threshold)
+# [p for (p, q) in ((k,v) for (k, v) in llrs if v > 95)]
+
+#%%
+sns.set_style('whitegrid')
+sns.distplot([e for e in (np.log10(v) for (k, v) in llrs)], bins=75, kde=False)
+
