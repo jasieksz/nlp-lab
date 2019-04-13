@@ -6,6 +6,7 @@ The tasks accompanying the Natural Language Processing classes at AGH University
 1. [Full text search](lab2/lab2.md)
 1. [Levenshtein distance](lab3/lab3.md)
 1. [Multiword identification](lab4/lab4.md)
+1. [Morphosyntactic tagging](lab5/lab5.md)
 
 ---
 Python files use VS Code jupyter notebook extension format `(#%%)`
