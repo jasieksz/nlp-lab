@@ -65,8 +65,8 @@ for filename in os.listdir(resource_path):
         doc_shingles.append(get_shingles(doc))
         doc_tokens.append(get_tokens(doc))
 
-shingles: List[str] = shapers.flatten(doc_shingles)
-tokens: List[str] = shapers.flatten(doc_tokens)
+shingles = shapers.flatten(doc_shingles)
+tokens = shapers.flatten(doc_tokens)
 
 #%% 
 text_only = lambda x: not re.search(r'\d+', x)
@@ -86,7 +86,7 @@ pmis = [(s, pmi(s[0], s[1])) for s in shingle_freq.keys()]
 pmis = sorted(pmis, key=lambda e: e[1], reverse=True)
 pmis[:30]
 
-#%%
+#%% filtered 30 top from ex.2
 pmis2 = [(s, pmi(s[0], s[1])) for s in shingle_freq.keys() if shingle_freq[s] > 10]
 pmis2 = sorted(pmis2, key=lambda e: e[1], reverse=True)
 pmis2[:30]
@@ -96,21 +96,16 @@ h = lambda k: (k/k.sum() * np.log(k/k.sum() + (k==0))).sum()
 llr = lambda k: 2*k.sum() * (h(k) - h(k.sum(axis=0)) - h(k.sum(axis=1)))
 sum_shingles = sum(list(shingle_freq.values()))
 
-a_n_b = lambda a, b, s: s[0][0]==a and s[0][1]!=b
-val = lambda s: s[1]
-
-def prob(a, b, shingle_items):
-    anb = partial(a_n_b, a, b)
-    bna = partial(a_n_b, b, a)
+def prob(a, b):
     a_and_b = shingle_freq.get((a, b), 0)
-    # all - first(a) - second(b)
-    a_not_b = sum(map(val, filter(anb, shingle_items)))
-    b_not_a = sum(map(val, filter(bna, shingle_items)))
+    a_not_b = tokens_freq[a] - a_and_b
+    b_not_a = tokens_freq[b] - a_and_b
     none = sum_shingles - a_not_b - b_not_a - a_and_b
+
     return np.array([[a_and_b, a_not_b], [b_not_a, none]])
 
 arr = shingle_freq.items()
-gen_probs = ((s, prob(s[0], s[1], arr)) for s in shingle_freq.keys())
+gen_probs = ((s, prob(s[0], s[1])) for s in shingle_freq.keys())
 
 #%%
 llrs = []
