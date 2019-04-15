@@ -21,7 +21,7 @@ es.indices.create(
                   "my_analyzer": {
                       "type": "custom",
                       "tokenizer": "standard",
-                      "filter": ["morfologik_stem", "lowercase", "shingle"],
+                      "filter": ["lowercase", "shingle"],
                     }
                 }
             }
@@ -54,7 +54,10 @@ get_tokens = lambda text: list(map(lambda x: x['token'],
                                 filter(lambda x: x['type'] == '<ALPHANUM>',
                                 text)))
 
-#%% 1.1 Compute bigram counts in the corpora
+text_only = lambda x: not re.search(r'\d+', x)
+make_tuple = lambda x: tuple(x.split(' '))
+
+#%% Bigram counts in the corpora
 resource_path = 'resources/ustawy'
 doc_shingles: List[List[str]] = []
 doc_tokens: List[List[str]] = []
@@ -65,33 +68,25 @@ for filename in os.listdir(resource_path):
         doc_shingles.append(get_shingles(doc))
         doc_tokens.append(get_tokens(doc))
 
-shingles = shapers.flatten(doc_shingles)
-tokens = shapers.flatten(doc_tokens)
+shingles = map(make_tuple, filter(text_only, shapers.flatten(doc_shingles)))
+tokens = filter(text_only, shapers.flatten(doc_tokens))
 
-#%% 
-text_only = lambda x: not re.search(r'\d+', x)
-make_tuple = lambda x: tuple(x.split(' '))
+#%% Morphosyntactic tagging - krnnt
+split = lambda x: x[1].split('\t')[1:3]
+twos = lambda x: len(x) == 2
+tuple_split = lambda x: (x[0], x[1].split(':')[0])
+composed = lambda a, b: a == "subst" and b == "adj"
 
-#%% 1.2 Filter shingles - text only, lowercase, no punctuation
-shingle_freq = Counter(list(map(make_tuple, filter(text_only, shingles))))
-tokens_freq = Counter(list(filter(text_only, tokens)))
+def krnnt(text):
+    response = req.post('http://localhost:9200', text.encode("utf-8")) \
+            .content.decode("utf-8") \
+            .split("\n")
+    return list(map(tuple_split, filter(twos, map(split, shapers.pairs(response)))))
 
-#%% 2. Pointwise Mutal Information score
-p_t = lambda token: tokens_freq[token] / len(tokens_freq)
-p_s = lambda shingle: shingle_freq[shingle] / len(shingle_freq)
-pmi = lambda x, y: np.log(p_s((x, y)) / (p_t(x) * p_t(y)))
+shingles = (e for e in ((krnnt(sh[0]), krnnt(sh[1])) for sh in shingles) if composed(e[0], e[1]))
+shingle_freq = Counter(list(shingles))
 
-#%% 3. 30 top from ex.2
-pmis = [(s, pmi(s[0], s[1])) for s in shingle_freq.keys()]
-pmis = sorted(pmis, key=lambda e: e[1], reverse=True)
-pmis[:30]
-
-#%% filtered 30 top from ex.2
-pmis2 = [(s, pmi(s[0], s[1])) for s in shingle_freq.keys() if shingle_freq[s] > 10]
-pmis2 = sorted(pmis2, key=lambda e: e[1], reverse=True)
-pmis2[:30]
-
-#%% 4. Log Likelihood Ration score
+#%% LLR score
 h = lambda k: (k/k.sum() * np.log(k/k.sum() + (k==0))).sum()
 llr = lambda k: 2*k.sum() * (h(k) - h(k.sum(axis=0)) - h(k.sum(axis=1)))
 sum_shingles = sum(list(shingle_freq.values()))
@@ -101,15 +96,10 @@ def prob(a, b):
     a_not_b = tokens_freq[a] - a_and_b
     b_not_a = tokens_freq[b] - a_and_b
     none = sum_shingles - a_not_b - b_not_a - a_and_b
-
     return np.array([[a_and_b, a_not_b], [b_not_a, none]])
 
-arr = shingle_freq.items()
-gen_probs = ((s, prob(s[0], s[1])) for s in shingle_freq.keys())
-
-#%%
 llrs = []
-for e in gen_probs:
+for e in ((s, prob(s[0], s[1])) for s in shingle_freq.keys()):
     score = 0
     try:
         score = llr(e[1])
@@ -119,4 +109,5 @@ for e in gen_probs:
         llrs.append((e[0], score))
 llrs = sorted(llrs, key=lambda e: e[1], reverse=True)
 
-
+#%%
+llrs[:30]
