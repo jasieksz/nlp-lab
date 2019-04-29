@@ -2,7 +2,8 @@
 .vscode
 resources/ustawy/
 resources/polimorfologik-2.1
-resources/polimorfologik-2.1.zip
+resources/plwordnet_2_3/
+resources/plwordnet_3_0/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
