@@ -6,6 +6,9 @@
 #%%
 import requests
 from collections import namedtuple
+from functools import partial
+import networkx as nx
+from matplotlib import pyplot as plt
 from lab1 import shapers as shp
 
 #%% Helpers
@@ -71,13 +74,51 @@ direct_hypo
 {word: direct_hyponyms(word) for word in direct_hypo}
 
 #%% 4.1 Directed graph of semantic relation between groups of lexemes:
-a = ['szkoda', 'strata', 'uszczerbek','szkoda majątkowa',
-	 'uszczerbek na zdrowiu', 'krzywda', 'niesprawiedliwość', 'nieszczęście']
+# 'szkoda majątkowa' is missing
+a = ['szkoda', 'strata', 'uszczerbek', 'uszczerbek na zdrowiu',
+	 'krzywda', 'niesprawiedliwość', 'nieszczęście']
 
 b = ['wypadek', 'wypadek komunikacyjny', 'kolizja', 'zderzenie',
 	 'kolizja drogowa', 'bezkolizyjny', 'katastrofa budowlana', 'wypadek drogowy']
 
+sen_id = lambda word: get_senses_from_word(word)[0]['id']
+syn_id = lambda word: get_synset_from_sense(sen_id(word))['id']
+
+is_node = lambda nodes, rel: rel['synsetTo']['id'] in nodes
+
+def distance_matrix(A):
+	graph = []
+	for i in range(len(A)):
+		graph.append([0]*len(A))
+
+	nodes = list(map(syn_id, A))
+	isn = partial(is_node, nodes)
+
+	for i, n in enumerate(nodes):
+		relations = [(rel['synsetTo']['id'], rel['relation']['id']) for rel in get_relations_from(n) if isn(rel)]
+		for rel in relations:
+			graph[i][nodes.index(rel[0])] = rel[1]
+	return graph
+
+def draw(distances):
+	G=nx.from_numpy_matrix(np.array(distances))
+	nx.draw(G)
+	plt.show()
+
+dist = distance_matrix(a)
+draw(dist)
+
+dist = distance_matrix(b)
+draw(dist)
+
 #%% 5. Value of Leacock-Chodorow semantic similarity measure between pairs
+from pywnxml import WNQuery
+
 x = ('szkoda', 'wypadek')
 y = ('kolizja', 'szkoda majątkowa')
 z = ('nieszczęście', 'katastrofa budowlana')
+
+wn = WNQuery.WNQuery('resources/plwordnet_3_0/plwordnet-3.0.xml')
+
+#%%
+[wn.similarityLeacockChodorow(e[0], e[1]) for e in [x, y, z]]
