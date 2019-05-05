@@ -1,6 +1,6 @@
 # Natural language processing tasks
 
-The tasks accompanying the Natural Language Processing classes at AGH University of Science and Technology in Krakow.
+The tasks accompanying the Natural Language Processing classes at AGH in Krakow, conducted by: https://github.com/apohllo/nlp
 
 1. [Regular expressions](lab1/lab1.md)
 1. [Full text search](lab2/lab2.md)
@@ -8,5 +8,6 @@ The tasks accompanying the Natural Language Processing classes at AGH University
 1. [Multiword identification](lab4/lab4.md)
 1. [Morphosyntactic tagging](lab5/lab5.md)
 1. [Wordnet](lab6/lab6.md)
+1. [Embeddings](7-embeddings.md)
 ---
 Python files use VS Code jupyter notebook extension format `(#%%)`

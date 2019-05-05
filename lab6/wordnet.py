@@ -1,15 +1,13 @@
 #%%
-# from wn import WordNet 
-# w = WordNet(wordnet_data_dir='resources/plwordnet_2_3/plwordnet_2_3_pwn_format')
-# w.synsets("szkoda")
-
-#%%
 import requests
 from collections import namedtuple
 from functools import partial
 import networkx as nx
 from matplotlib import pyplot as plt
 from lab1 import shapers as shp
+import nltk
+from nltk.corpus import wordnet as wn
+import numpy as np
 
 #%% Helpers
 def get_senses_from_word(word):
@@ -71,25 +69,32 @@ direct_hypo = direct_hyponyms('wypadek')
 direct_hypo
 
 #%% 3.2 Second-order hyponyms of 'wypadek'
-{word: direct_hyponyms(word) for word in direct_hypo}
+dh2 = {word: direct_hyponyms(word) for word in direct_hypo}
+print('katastrofa', dh2['katastrofa'], '\n')
+print('wykolejenie', dh2['wykolejenie'], '\n')
+print('wypadek komunikacyjny', dh2['wypadek komunikacyjny'])
 
 #%% 4.1 Directed graph of semantic relation between groups of lexemes:
 # 'szkoda majątkowa' is missing
-a = ['szkoda', 'strata', 'uszczerbek', 'uszczerbek na zdrowiu',
-	 'krzywda', 'niesprawiedliwość', 'nieszczęście']
+a = ['strata', 'uszczerbek', 'uszczerbek na zdrowiu',
+	 'krzywda', 'niesprawiedliwość', 'nieszczęście', 'szkoda']
 
-b = ['wypadek', 'wypadek komunikacyjny', 'kolizja', 'zderzenie',
-	 'kolizja drogowa', 'bezkolizyjny', 'katastrofa budowlana', 'wypadek drogowy']
+b = ['wypadek', 'wypadek komunikacyjny', 'katastrofa budowlana', 
+	'wypadek drogowy', 'kolizja', 'zderzenie', 'kolizja drogowa', 'bezkolizyjny']
 
 sen_id = lambda word: get_senses_from_word(word)[0]['id']
 syn_id = lambda word: get_synset_from_sense(sen_id(word))['id']
 
 is_node = lambda nodes, rel: rel['synsetTo']['id'] in nodes
 
+def map_relation(relation):
+	return 'hiper' if relation == 10 else 'hipo'
+
 def distance_matrix(A):
-	graph = []
+	edges = []
+	dist = []
 	for i in range(len(A)):
-		graph.append([0]*len(A))
+		dist.append(['']*len(A))
 
 	nodes = list(map(syn_id, A))
 	isn = partial(is_node, nodes)
@@ -97,28 +102,42 @@ def distance_matrix(A):
 	for i, n in enumerate(nodes):
 		relations = [(rel['synsetTo']['id'], rel['relation']['id']) for rel in get_relations_from(n) if isn(rel)]
 		for rel in relations:
-			graph[i][nodes.index(rel[0])] = rel[1]
-	return graph
+			dist[i][nodes.index(rel[0])] = map_relation(rel[1])
+			edges.append((i, nodes.index(rel[0]))) 
+	return dist, edges
 
-def draw(distances):
-	G=nx.from_numpy_matrix(np.array(distances))
-	nx.draw(G)
-	plt.show()
-
-dist = distance_matrix(a)
-draw(dist)
-
-dist = distance_matrix(b)
-draw(dist)
-
-#%% 5. Value of Leacock-Chodorow semantic similarity measure between pairs
-from pywnxml import WNQuery
-
-x = ('szkoda', 'wypadek')
-y = ('kolizja', 'szkoda majątkowa')
-z = ('nieszczęście', 'katastrofa budowlana')
-
-wn = WNQuery.WNQuery('resources/plwordnet_3_0/plwordnet-3.0.xml')
+distA = distance_matrix(a)
+distB = distance_matrix(b)
 
 #%%
-[wn.similarityLeacockChodorow(e[0], e[1]) for e in [x, y, z]]
+lab = lambda lst: {i: lst[i] for i in range(len(lst))}
+edge_name = lambda dist, edge: dist[edge[0]][edge[1]] + '/' + dist[edge[1]][edge[0]]
+
+def draw(nodes, edges, dist):
+	ed_nm = partial(edge_name, dist)
+	G = nx.DiGraph()
+	G.add_edges_from(edges)
+	G.add_nodes_from(list(range(len(nodes))))
+	pos = nx.spring_layout(G)
+	edge_lab = {edge: ed_nm(edge) for edge in G.edges}
+	node_lab = lab(nodes)
+	nx.draw(G, pos, with_labels=True, labels=node_lab, alpha=0.8)
+	nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_lab, font_color='red')
+	plt.show()
+
+#%% Disconnected nodes removed for clarity
+ap = list(filter(lambda w: w != 'szkoda' and w != 'nieszczęście', a))
+draw(ap, distA[1], distA[0])
+
+#%% Disconnected nodes removed
+draw(b[:4], distB[1], distB[0])
+
+#%% 5. Value of Leacock-Chodorow semantic similarity measure between pairs
+x = (('szkoda', 1), ('wypadek', 0))
+y = (('kolizja', 1), ('szkoda', 1))
+z = (('nieszczęście', 0), ('katastrofa', 1))
+arr = [x, y, z]
+
+res = map(lambda t: (wn.synsets(t[0][0])[t[0][1]], wn.synsets(t[1][0])[t[1][1]]), arr)
+res = map(lambda t: (t, wn.lch_similarity(t[0], t[1])), res)
+list(res)
