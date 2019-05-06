@@ -1,10 +1,6 @@
 # jsz
 .vscode
-resources/ustawy/
-resources/polimorfologik-2.1
-resources/plwordnet_2_3/
-resources/plwordnet_3_0/
-pywnxml/
+resources/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

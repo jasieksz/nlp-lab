@@ -18,6 +18,9 @@ python-levenshtein = "*"
 requests = "*"
 networkx = "*"
 elasticsearch = "<7.*"
+gensim = "*"
+scikit-learn = "*"
+pprint = "*"
 
 [requires]
 python_version = "3.7"
