@@ -13,11 +13,11 @@ nltk = "*"
 jupyter = "*"
 pylint = "*"
 mypy = "*"
-elasticsearch = "*"
 seaborn = "*"
 python-levenshtein = "*"
 requests = "*"
 networkx = "*"
+elasticsearch = "<7.*"
 
 [requires]
 python_version = "3.7"

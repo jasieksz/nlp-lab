@@ -107,7 +107,7 @@ def prob(a, b):
 arr = shingle_freq.items()
 gen_probs = ((s, prob(s[0], s[1])) for s in shingle_freq.keys())
 
-#%%
+#%% 4. LLR
 llrs = []
 for e in gen_probs:
     score = 0
@@ -122,6 +122,9 @@ llrs = sorted(llrs, key=lambda e: e[1], reverse=True)
 #%% 5. 30 top from ex.4
 llrs[:30]
 
+#%% 5. Filtered top 30 from ex.4
+list(filter(lambda t: len(t[0][0]) > 1 and len(t[0][1]) > 1, llrs))[:30]
+
 #%% 6.1 PMI or LLR ?
 # LLR
 # http://www.lrec-conf.org/proceedings/lrec2002/pdf/128.pdf
@@ -132,9 +135,40 @@ llrs[:30]
 #%% 6.3 Metric threshold for good/bad multiword
 threshold = np.nanquantile(list((v for (k, v) in llrs)), 0.95)
 print(threshold)
-# [p for (p, q) in ((k,v) for (k, v) in llrs if v > 95)]
+[p for (p, q) in ((k,v) for (k, v) in llrs if v > threshold)]
 
 #%%
 sns.set_style('whitegrid')
 sns.distplot([e for e in (np.log10(v) for (k, v) in llrs)], bins=75, kde=False)
 
+#%% LAB5
+import requests
+
+split = lambda x: x[1].split('\t')[1:3]
+twos = lambda x: len(x) == 2
+tuple_split = lambda x: (x[0], x[1].split(':')[0])
+composed = lambda a, b: a[1] == "subst" and b[1] == "subst"
+simple_composed = lambda a, b: a == "subst" and b == "adj"
+
+def krnnt(text):
+    response = requests.post('http://localhost:9200', text.encode("utf-8")) \
+            .content.decode("utf-8") \
+            .split("\n")
+    return list(map(tuple_split, filter(twos, map(split, shapers.pairs(response)))))[0]
+
+
+#%%
+tags = {}
+for k, v in llrs[:100]:
+    w1, w2 = k
+    if w1 not in tags:
+        tags[w1] = krnnt(w1)[1]
+    if w2 not in tags:
+        tags[w2] = krnnt(w2)[1]
+
+res = []
+for k, v in llrs[:100]:
+    if simple_composed(tags[k[0]], tags[k[1]]):
+        res.append((k, v))
+
+res
