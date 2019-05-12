@@ -41,8 +41,3 @@ def get_tags():
     filenames = get_statute_file()
     files = list(filenames)
     return {(filename, section_one): update_tag for filename, section_one, update_tag in tag_statutes(files)}
-
-#%%
-res = get_tags()
-updates = len([1 for v in res.values() if v])
-new = len(res) - updates
