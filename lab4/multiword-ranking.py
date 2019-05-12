@@ -147,7 +147,7 @@ import requests
 split = lambda x: x[1].split('\t')[1:3]
 twos = lambda x: len(x) == 2
 tuple_split = lambda x: (x[0], x[1].split(':')[0])
-composed = lambda a, b: a[1] == "subst" and b[1] == "subst"
+composed = lambda a, b: a[1] == "subst" and b[1] == "adj"
 simple_composed = lambda a, b: a == "subst" and b == "adj"
 
 def krnnt(text):

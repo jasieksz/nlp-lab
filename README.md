@@ -9,5 +9,6 @@ The tasks accompanying the Natural Language Processing classes at AGH in Krakow,
 1. [Morphosyntactic tagging](lab5/lab5.md)
 1. [Wordnet](lab6/lab6.md)
 1. [Embeddings](lab7/lab7.md)
+1. [Classification](lab8/lab8.md)
 ---
 Python files use VS Code jupyter notebook extension format `(#%%)`

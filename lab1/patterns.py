@@ -14,7 +14,7 @@ def register() -> str:
     return base + title + ref
 
 def section() -> str:
-    return r'\bArt\. \d*\.\n'
+    return r'\bArt\. \d*\.*\s*\n*'
 
 def paragraph() -> str:
     return r'\d+\.\s(?=[A-Z])'
@@ -48,3 +48,6 @@ def internal_pattern_order() -> List[str]:
          internal_section_point(),
          internal_section_paragraph(),
          internal_paragraph()]
+
+def changed_statute() -> str:
+    return r'\bzmianie\b(.*?)\bustaw(.*?)\b'
