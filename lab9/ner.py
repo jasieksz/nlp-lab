@@ -5,6 +5,9 @@ import os
 from bs4 import BeautifulSoup
 from functools import partial, reduce
 from collections import Counter
+import re
+import seaborn as sns
+from matplotlib import pyplot as plt
 
 #%%
 def getRandomStatutes(n=100, path='resources/ustawy'):
@@ -21,6 +24,7 @@ body = lambda model, text: {
 }
 
 n82 = partial(body, 'n82')
+top9 = partial(body, "top9")
 
 url = 'http://ws.clarin-pl.eu/nlprest2/base/process'
 
@@ -30,23 +34,35 @@ res = requests.post(url, json=n82("Donald Tusk nie wie kim jest niedźwiedź Woj
             którą można spotkać na Rynku Krakowskim lub na moście Łazienkowskim."))
 
 y = BeautifulSoup(res.content)
+y
 
 #%% Filter -> Tag -> Reduce
 is_NE = lambda x: x.contents[0] != '0'
 add = lambda x,y : x + y
+tag = lambda x: re.search(r'chan=\"(\w*)\"', str(x)).groups()[0]
 
-def getTags(text):
-    res = requests.post(url, json=n82(text))
+def getTags(text, model):
+    res = requests.post(url, json=model(text))
     y = BeautifulSoup(res.content)
-    return Counter(list(filter(is_NE, y.findAll('ann'))))
+    print(y)
+    r = Counter(list(map(tag, set(filter(is_NE, y.findAll('ann'))))))
+    print(r)
+    return r
 
-def tagStatutes(paths):
+def tagStatutes(paths, model):
     statutes = (readStatute(path) for path in paths)
-    tags = (getTags(statute) for statute in statutes)
+    tags = (getTags(statute, model) for statute in statutes)
     return reduce(add, tags)
 
 #%% Run
-paths = list(map(lambda x: 'resources/ustawy/'+x, getRandomStatutes(2)))
-res = tagStatutes(paths)
-res
+paths = list(map(lambda x: 'resources/ustawy/'+x, getRandomStatutes(1)))
 
+freq_fine = tagStatutes(paths, n82)
+freq_coarse = tagStatutes(paths, top9)
+
+#%% Plot
+sns.set_style('whitegrid')
+sns.barplot(y=list(freq_fine.keys()), x=list(freq_fine.values()), palette='viridis')
+plt.show()
+sns.barplot(y=list(freq_coarse.keys()), x=list(freq_coarse.values()), palette='viridis')
+            
