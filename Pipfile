@@ -25,6 +25,8 @@ fasttext = {git = "https://github.com/facebookresearch/fastText.git"}
 torch = {path = "./../torch-1.1.0-cp37-cp37m-linux_x86_64.whl"}
 torchvision = "*"
 flair = "*"
+pika = "*"
+bs4 = "*"
 
 [requires]
 python_version = "3.7"
