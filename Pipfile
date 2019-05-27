@@ -27,6 +27,9 @@ torchvision = "*"
 flair = "*"
 pika = "*"
 bs4 = "*"
+fastai = "*"
+sentencepiece = "*"
+fire = "*"
 
 [requires]
 python_version = "3.7"
